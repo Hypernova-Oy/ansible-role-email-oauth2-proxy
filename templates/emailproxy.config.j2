@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+
+# https://learn.microsoft.com/en-us/exchange/client-developer/legacy-protocols/how-to-authenticate-an-imap-pop-smtp-application-by-using-oauth#use-client-credentials-grant-flow-to-authenticate-smtp-imap-and-pop-connections
+# https://www.limilabs.com/blog/oauth2-client-credential-flow-office365-exchange-imap-pop3-smtp
+
+[SMTP-1587]
+server_address = {{ email_oauth2_proxy_smtp_host }}
+server_port = {{ email_oauth2_proxy_smtp_port }}
+server_starttls = {{ email_oauth2_proxy_smtp_server_starttls }}
+local_address = {{ email_oauth2_proxy_smtp_local_address }}
+
+[{{ email_oauth2_proxy_smtp_username }}]
+token_url = https://login.microsoftonline.com/{{ email_oauth2_proxy_smtp_o365_tenant_id }}/oauth2/v2.0/token
+oauth2_scope = https://outlook.office365.com/.default
+oauth2_flow = client_credentials
+client_id = {{ email_oauth2_proxy_smtp_client_id }}
+
+[emailproxy]
+delete_account_token_on_password_error = {{ email_oauth2_proxy_delete_account_token_on_password_error|default('True') }}
+encrypt_client_secret_on_first_use = {{ email_oauth2_proxy_encrypt_client_secret_on_first_use|default('False') }}
+use_login_password_as_client_credentials_secret = {{ email_oauth2_proxy_use_login_password_as_client_credentials_secret|default('True') }}
+allow_catch_all_accounts = {{ email_oauth2_proxy_allow_catch_all_accounts|default('False') }}

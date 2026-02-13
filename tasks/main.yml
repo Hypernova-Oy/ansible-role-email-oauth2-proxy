@@ -1,0 +1,113 @@
+---
+
+- name: Install pip
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-pip
+    - python3-venv
+
+- name: Create group for email-oauth2-proxy
+  ansible.builtin.group:
+    name: "{{ email_oauth2_proxy_group }}"
+    state: present
+
+- name: Create user for email-oauth2-proxy
+  ansible.builtin.user:
+    name: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+    shell: /bin/bash
+    create_home: no
+
+- name: Create directory for email-oauth2-proxy
+  ansible.builtin.file:
+    state: directory
+    path: "{{ email_oauth2_proxy_dir }}"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+
+- name: Create config directory for email-oauth2-proxy
+  ansible.builtin.file:
+    state: directory
+    path: "{{ email_oauth2_proxy_config_dir }}"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+
+- name: Create cache directory for email-oauth2-proxy
+  ansible.builtin.file:
+    state: directory
+    path: "{{ email_oauth2_proxy_cache_dir }}"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+
+- name: Create cache file for email-oauth2-proxy
+  ansible.builtin.file:
+    state: touch
+    path: "{{ email_oauth2_proxy_cache_dir }}/emailproxy.cache"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+    mode: '0640'
+
+- name: Create python virtual environment
+  ansible.builtin.command:
+    chdir: "{{ email_oauth2_proxy_dir }}"
+    cmd: "{{ ansible_python_interpreter }} -m venv {{ email_oauth2_proxy_venv_dir }}"
+  become_user: "{{ email_oauth2_proxy_user }}"
+
+- name: Install email-oauth2-proxy
+  ansible.builtin.pip:
+    name: emailproxy
+    virtualenv: "{{ email_oauth2_proxy_venv_dir }}"
+    virtualenv_command: "{{ ansible_python_interpreter }} -m venv"
+  become_user: "{{ email_oauth2_proxy_user }}"
+
+- name: Populate systemd service facts
+  ansible.builtin.service_facts:
+
+- name: Set configuration file
+  ansible.builtin.template:
+    src: emailproxy.config.j2
+    dest: "{{ email_oauth2_proxy_config_dir }}/emailproxy.config"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+    mode: '0640'
+  register: email_oauth2_proxy_conf
+
+- name: Stop if systemd service is running
+  ansible.builtin.systemd_service:
+    name: emailproxy
+    state: stopped
+  register: email_oauth2_proxy_stopped
+  when:
+    - email_oauth2_proxy_conf.changed
+    - ansible_facts['services']['emailproxy.service']['state'] | default('unknown') == 'running'
+
+- name: Configuration changed, but stopping emailproxy may have overwritten changes. Rewrite them
+  ansible.builtin.template:
+    src: emailproxy.config.j2
+    dest: "{{ email_oauth2_proxy_config_dir }}/emailproxy.config"
+    owner: "{{ email_oauth2_proxy_user }}"
+    group: "{{ email_oauth2_proxy_group }}"
+    mode: '0640'
+  when: email_oauth2_proxy_stopped.changed
+
+- name: Generate systemd unit file
+  ansible.builtin.template:
+    src: etc_systemd_system_emailproxy.service.j2
+    dest: /etc/systemd/system/emailproxy.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: emailproxy_unit_file
+
+- name: systemctl daemon-reload
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: emailproxy_unit_file.changed
+
+- name: Enable systemd daemon
+  ansible.builtin.systemd_service:
+    name: emailproxy
+    state: started
+    enabled: true

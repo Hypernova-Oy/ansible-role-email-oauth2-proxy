@@ -1,0 +1,22 @@
+email_oauth2_proxy_user: emailproxy
+email_oauth2_proxy_group: emailproxy
+email_oauth2_proxy_dir: /usr/share/emailproxy
+email_oauth2_proxy_cache_dir: /var/cache/emailproxy
+email_oauth2_proxy_config_dir: /etc/emailproxy
+email_oauth2_proxy_venv_dir: "{{ email_oauth2_proxy_dir }}/venv"
+
+email_oauth2_proxy_smtp_host: smtp-mail.outlook.com
+email_oauth2_proxy_smtp_port: 587
+email_oauth2_proxy_smtp_server_starttls: True
+email_oauth2_proxy_smtp_local_address: 127.0.0.1
+
+email_oauth2_proxy_smtp_o365_tenant_id: common
+email_oauth2_proxy_smtp_username: koha@o365.com
+
+email_oauth2_proxy_smtp_client_id: "{{ vault_email_oauth2_proxy_smtp_client_id }}"
+email_oauth2_proxy_smtp_client_secret: "{{ vault_email_oauth2_proxy_smtp_client_secret }}"
+
+email_oauth2_proxy_delete_account_token_on_password_error: True
+email_oauth2_proxy_encrypt_client_secret_on_first_use: False
+email_oauth2_proxy_use_login_password_as_client_credentials_secret: True
+email_oauth2_proxy_allow_catch_all_accounts: False

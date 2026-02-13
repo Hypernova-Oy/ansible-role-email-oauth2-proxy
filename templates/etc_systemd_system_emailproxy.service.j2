@@ -1,0 +1,11 @@
+[Unit]
+Description=Email OAuth 2.0 Proxy
+
+[Service]
+ExecStart={{ email_oauth2_proxy_venv_dir }}/bin/emailproxy --external-auth --no-gui --config-file {{ email_oauth2_proxy_config_dir }}/emailproxy.config --cache-store={{ email_oauth2_proxy_cache_dir }}/emailproxy.cache
+Restart=always
+User={{ email_oauth2_proxy_user }}
+Group={{ email_oauth2_proxy_group }}
+
+[Install]
+WantedBy=multi-user.target
